@@ -12,8 +12,9 @@ public class MainProgram {
 		Scanner reader = new Scanner(System.in);
 		System.out.print("Enter the thicker symbol of the company: ");
 		String companyName = reader.nextLine();
-		OpenURLStream urlStream = new OpenURLStream();
-		String link = urlStream.ExtractLink(urlStream,companyName);
+		OpenURLStream urlStream = new OpenURLStream(companyName);
+		System.out.println(urlStream.consolidatedBalanceSheetData());
+		System.out.println(urlStream.getDocumentYear());
 	}
 
 }
