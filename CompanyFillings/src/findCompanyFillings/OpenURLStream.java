@@ -31,24 +31,22 @@ public Hashtable<String,Double> consolidatedBalanceSheetData()
 													consolidatedBalanceSheetURL.openStream()));
 		String documentLine = new String();
 		Pattern p = Pattern.compile("window \\);\">([\\w\\s\\p{Punct}]+)</a></td>");
-		Pattern p1 = Pattern.compile("(>[0-9]+(,[0-9]+)*)|( [0-9]+(,[0-9]+)*)");
+		Pattern p1 = Pattern.compile("(>[0-9]+(\\p{Punct}[0-9]+)*)|( [0-9]+(\\p{Punct}[0-9]+)*)");
 		boolean lineWithValue = false;
 		int multiplier = 1;
-		boolean lineWithYear = false;
 		while((documentLine = balanceSheetHTML.readLine()) != null)
 		{
 			
-			if (documentLine.contains("colspan=\"1\" rowspan=\"1\"")) {
+			if (documentLine.contains("colspan=\"1\" rowspan=\"1\""))
 				multiplier = getMultiplier(documentLine);
-				lineWithYear = true;
-			}
 			
-			if(lineWithValue == true)
+			if(lineWithValue == true && documentLine.contains("nump"))
 			{
 				Matcher m1 = p1.matcher(documentLine);
 				if (m1.find()) {
-					String replaceComma = documentLine.substring(m1.start()+1,m1.end()).replaceAll(",","");
-					value = Long.parseLong(replaceComma) * multiplier;
+					String replacePunct = documentLine.substring(m1.start()+1,m1.end()).replaceAll(",","");
+					replacePunct = replacePunct.replace(".", "");
+					value = Long.parseLong(replacePunct) * multiplier;
 					System.out.println(value);
 				}
 				lineWithValue = false;
@@ -124,7 +122,7 @@ private boolean checkForBalanceSheet(String balanceSheetURL) {
 	String tmp = new String();
 	while ((tmp = linkForActivity.readLine()) != null){
 		tmp = tmp.toUpperCase();
-		if (tmp.contains("CONSOLIDATED BALANCE SHEETS - USD"))
+		if (tmp.contains("CONSOLIDATED BALANCE SHEETS - USD") || tmp.contains("BALANCE SHEETS - USD"))
 			return true;
 	}
 	}catch(IOException e) {
@@ -213,7 +211,7 @@ public int getDocumentYear()
 			if (lineWithYear == true)
 				break;
 			
-			if(documentLine.contains("colspan=\"1\" rowspan=\"1\""))
+			if(documentLine.contains("colspan=\"1\" rowspan=\"1\"") || documentLine.contains("colspan=\"2\" rowspan=\"1\""))
 				lineWithYear = true;
 		}
 		Matcher m = p.matcher(documentLine);
