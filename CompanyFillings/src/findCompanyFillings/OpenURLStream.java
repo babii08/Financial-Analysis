@@ -1,5 +1,7 @@
 package findCompanyFillings;
 
+
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -11,20 +13,22 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import dbConnection.*;
 
 public class OpenURLStream {
 	
 	private String companyName;
+	private String companyInformation;
 	
 public OpenURLStream(String companyName)
 {
 	this.companyName = companyName;
+	companyInformation = "";
 }
 	
-public Hashtable<String,Double> consolidatedBalanceSheetData()
+public Hashtable<String,Long> consolidatedBalanceSheetData()
 {
-	long value;
-	Hashtable<String,Double> financeActivity = new Hashtable<String,Double>();
+	Hashtable<String,Long> financeActivity = new Hashtable<String,Long>();
 	try {
 		URL consolidatedBalanceSheetURL = getConsolidatedBalanceSheet();
 		BufferedReader balanceSheetHTML = new BufferedReader(new InputStreamReader(
@@ -34,6 +38,11 @@ public Hashtable<String,Double> consolidatedBalanceSheetData()
 		Pattern p1 = Pattern.compile("(>[0-9]+(\\p{Punct}[0-9]+)*)|( [0-9]+(\\p{Punct}[0-9]+)*)");
 		boolean lineWithValue = false;
 		int multiplier = 1;
+		int activityCount = 0;
+		int valueCount = 0;
+		String[] typeOfActivity = new String[1000];
+		long[] value = new long[1000];
+		
 		while((documentLine = balanceSheetHTML.readLine()) != null)
 		{
 			
@@ -46,8 +55,11 @@ public Hashtable<String,Double> consolidatedBalanceSheetData()
 				if (m1.find()) {
 					String replacePunct = documentLine.substring(m1.start()+1,m1.end()).replaceAll(",","");
 					replacePunct = replacePunct.replace(".", "");
-					value = Long.parseLong(replacePunct) * multiplier;
-					System.out.println(value);
+					value[valueCount] = Long.parseLong(replacePunct) * multiplier;
+					System.out.println(value[valueCount]);
+					companyInformation = companyInformation + " = " + value[valueCount] + "; \n";
+					valueCount++;
+
 				}
 				lineWithValue = false;
 			}
@@ -56,21 +68,24 @@ public Hashtable<String,Double> consolidatedBalanceSheetData()
 			if (m.find())
 			{
 				lineWithValue = true;
-				String typeOfActivity = documentLine.substring(m.start()+11,m.end()-9);
-				if (typeOfActivity.contains("strong") == true)
-					typeOfActivity = typeOfActivity.substring(8, typeOfActivity.length()-9);
-				System.out.println(typeOfActivity);
+				typeOfActivity[activityCount] = documentLine.substring(m.start()+11,m.end()-9);
+				if (typeOfActivity[activityCount].contains("strong") == true)
+					typeOfActivity[activityCount] = typeOfActivity[activityCount].substring(8, typeOfActivity[activityCount].length()-9);
+				System.out.println(typeOfActivity[activityCount]);
+				companyInformation = companyInformation + typeOfActivity[activityCount] + "   ";
+				activityCount++;
 				
 			}
-			
 		}
+		
+		for(int i=0;i<activityCount;i++)
+			financeActivity.put(typeOfActivity[i], value[i]);
+			
 	} catch (IOException e) {
-		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
 	return financeActivity;
 }
-	
 	
 private int getMultiplier(String documentLine) {
 	
@@ -223,7 +238,12 @@ public int getDocumentYear()
 		// TODO Auto-generated catch block
 		e1.printStackTrace();
 	}
+	System.out.println(year);
 	return year;
+}
+
+public String getCompanyInformation() {
+	return companyInformation;
 }
 
 }
